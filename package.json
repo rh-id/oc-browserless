@@ -21,7 +21,6 @@
     "clean:deps": "rm -rf dist node_modules",
     "clean:all": "rm -rf dist node_modules .opencode/node_modules",
     "reset": "bun run clean:all && bun install && cd .opencode && bun install && cd .. && bun run build",
-    "dev": "bun run src/plugin/browserless.ts",
     "test": "bun test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
