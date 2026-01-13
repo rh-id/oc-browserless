@@ -140,9 +140,11 @@ bun run build
 
 This will:
 
-- Compile TypeScript files to JavaScript
-- Generate type declarations
-- Output to `dist/` directory
+1. Compile TypeScript files to JavaScript in `dist/` directory
+2. Generate type declarations
+3. Copy compiled files to `.opencode/` for local OpenCode testing
+
+**Note**: The `.opencode/` directory is used for local development with OpenCode. When the package is published to npm, only the `dist/` directory is included.
 
 ### 4. Test with OpenCode
 
@@ -161,6 +163,8 @@ Run opencode and test:
 opencode
 ```
 
+**Note**: Use `"plugin": ["."]` for local development. If you've installed the package via npm (`npm install oc-browserless`), use `"plugin": ["oc-browserless"]` instead.
+
 ## Project Structure
 
 ```
@@ -171,20 +175,39 @@ oc-browserless/
 │   └── release.yml             # Automated releases
 ├── .husky/                    # Git hooks
 │   └── pre-commit              # Pre-commit lint-staged
-├── .opencode/                  # OpenCode plugin files
-│   └── tool/                  # Custom tools
-│       ├── browse.ts            # Navigate and browse web pages
-│       ├── search.ts            # DuckDuckGo search
-│       ├── screenshot.ts        # Screenshot capture
-│       ├── pdf.ts              # PDF generation
-│       └── browser.ts         # Browser lifecycle management
-├── src/                        # Source code
+├── .opencode/                  # OpenCode plugin files (compiled for local dev)
+│   ├── plugin/                # Compiled plugin
+│   │   ├── browserless.js    # Plugin entry point
+│   │   └── browserless.d.ts  # Type declarations
+│   └── tool/                  # Compiled tools
+│       ├── browse.js         # Navigate and browse web pages
+│       ├── search.js         # DuckDuckGo search
+│       ├── screenshot.js     # Screenshot capture
+│       ├── pdf.js            # PDF generation
+│       └── browser.js        # Browser lifecycle management
+├── dist/                       # Compiled output (published to npm)
+│   ├── plugin/
+│   │   ├── browserless.js
+│   │   └── browserless.d.ts
+│   └── tools/
+│       ├── browse.js
+│       ├── search.js
+│       ├── screenshot.js
+│       ├── pdf.js
+│       └── browser.js
+├── src/                        # Source code (TypeScript)
 │   ├── browser/               # Browser management
 │   │   └── manager.ts         # Browser instance manager
 │   ├── plugin/                # Plugin hooks
 │   │   └── browserless.ts    # Main plugin entry point
+│   ├── tools/                 # Custom tools
+│   │   ├── browse.ts          # Navigate and browse web pages
+│   │   ├── search.ts          # DuckDuckGo search
+│   │   ├── screenshot.ts      # Screenshot capture
+│   │   ├── pdf.ts             # PDF generation
+│   │   └── browser.ts         # Browser lifecycle management
 │   └── utils/                 # Utilities
-│       └── common.ts           # Common utilities
+│       └── common.ts          # Common utilities
 ├── Configuration Files
 │   ├── .gitignore             # Git ignore rules
 │   ├── .gitattributes         # Git attributes
