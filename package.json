@@ -1,0 +1,78 @@
+{
+  "name": "oc-browserless",
+  "version": "0.0.1",
+  "description": "Browserless plugin for OpenCode using puppeteer-core",
+  "type": "module",
+  "main": "./dist/plugin/browserless.js",
+  "types": "./dist/plugin/browserless.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/plugin/browserless.d.ts",
+      "import": "./dist/plugin/browserless.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && bun run build:copy",
+    "build:copy": "mkdir -p .opencode/plugin .opencode/tool && cp dist/plugin/browserless.js .opencode/plugin/ && cp dist/plugin/browserless.d.ts .opencode/plugin/ && cp dist/tools/*.js .opencode/tool/",
+    "clean": "rm -rf dist",
+    "clean:deps": "rm -rf dist node_modules",
+    "clean:all": "rm -rf dist node_modules .opencode/node_modules",
+    "reset": "bun run clean:all && bun install && cd .opencode && bun install && cd .. && bun run build",
+    "dev": "bun run src/plugin/browserless.ts",
+    "test": "bun test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint-staged": "lint-staged",
+    "prepare": "husky install",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "browserless",
+    "puppeteer",
+    "headless",
+    "browser"
+  ],
+  "author": "Ruby Hartono",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rh-id/oc-browserless"
+  },
+  "bugs": {
+    "url": "https://github.com/rh-id/oc-browserless/issues"
+  },
+  "homepage": "https://github.com/rh-id/oc-browserless#readme",
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.1.14",
+    "puppeteer-core": "^23.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.0.6",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,js,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

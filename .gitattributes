@@ -1,0 +1,9 @@
+# Normalize line endings to LF
+* text=auto eol=lf
+
+# Shell scripts must use LF (POSIX requirement)
+*.sh text eol=lf
+
+# Exclude build artifacts from normalization
+node_modules/** -text
+dist/** -text
