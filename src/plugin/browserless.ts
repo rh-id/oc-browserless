@@ -52,7 +52,6 @@ interface PdfResult {
   path?: string;
   base64?: string;
   format?: string;
-  pages?: number;
   error?: string;
 }
 
@@ -513,7 +512,6 @@ const pdfTool = tool({
         path?: string;
         base64?: string;
         format: string;
-        pages: number;
       };
 
       if (args.path) {
@@ -526,7 +524,6 @@ const pdfTool = tool({
         pdfResult = {
           path: args.path,
           format: args.format,
-          pages: 0,
         };
       } else {
         const buffer = await page.pdf(pdfOptions);
@@ -535,7 +532,6 @@ const pdfTool = tool({
         pdfResult = {
           base64,
           format: args.format,
-          pages: 0,
         };
       }
 
