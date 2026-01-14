@@ -290,9 +290,7 @@ The plugin provides the following tools for OpenCode:
 // Start browser
 {
   "tool": "browser.start",
-  "args": {
-    "browserlessUrl": "ws://localhost:3000"
-  }
+  "args": {}
 }
 
 // Stop browser
@@ -339,16 +337,14 @@ Navigate to and browse web pages.
 | scrollTo        | string  | No       | -       | CSS selector to scroll to  |
 | executeScript   | string  | No       | -       | JavaScript code to execute |
 | extractContent  | boolean | No       | true    | Extract page content       |
-| browserlessUrl  | string  | No       | -       | Browserless WebSocket URL  |
 
 ### search
 
 Search using DuckDuckGo.
 
-| Argument       | Type   | Required | Default | Description               |
-| -------------- | ------ | -------- | ------- | ------------------------- |
-| query          | string | Yes      | -       | Search query              |
-| browserlessUrl | string | No       | -       | Browserless WebSocket URL |
+| Argument | Type   | Required | Default | Description  |
+| -------- | ------ | -------- | ------- | ------------ |
+| query    | string | Yes      | -       | Search query |
 
 ### screenshot
 
@@ -363,25 +359,23 @@ Capture page screenshots.
 | quality        | number  | No       | -       | Quality for jpeg/webp (0-100) |
 | viewportWidth  | number  | No       | -       | Viewport width                |
 | viewportHeight | number  | No       | -       | Viewport height               |
-| browserlessUrl | string  | No       | -       | Browserless WebSocket URL     |
 
 ### pdf
 
 Generate PDF from HTML or URL.
 
-| Argument        | Type    | Required | Default | Description               |
-| --------------- | ------- | -------- | ------- | ------------------------- |
-| html            | string  | No\*     | -       | HTML content              |
-| url             | string  | No\*     | -       | URL to convert            |
-| path            | string  | No       | -       | Output file path          |
-| format          | enum    | No       | A4      | Paper format              |
-| printBackground | boolean | No       | true    | Print backgrounds         |
-| landscape       | boolean | No       | false   | Landscape mode            |
-| marginTop       | string  | No       | 0cm     | Top margin                |
-| marginBottom    | string  | No       | 0cm     | Bottom margin             |
-| marginLeft      | string  | No       | 0cm     | Left margin               |
-| marginRight     | string  | No       | 0cm     | Right margin              |
-| browserlessUrl  | string  | No       | -       | Browserless WebSocket URL |
+| Argument        | Type    | Required | Default | Description       |
+| --------------- | ------- | -------- | ------- | ----------------- |
+| html            | string  | No\*     | -       | HTML content      |
+| url             | string  | No\*     | -       | URL to convert    |
+| path            | string  | No       | -       | Output file path  |
+| format          | enum    | No       | A4      | Paper format      |
+| printBackground | boolean | No       | true    | Print backgrounds |
+| landscape       | boolean | No       | false   | Landscape mode    |
+| marginTop       | string  | No       | 0cm     | Top margin        |
+| marginBottom    | string  | No       | 0cm     | Bottom margin     |
+| marginLeft      | string  | No       | 0cm     | Left margin       |
+| marginRight     | string  | No       | 0cm     | Right margin      |
 
 \*Either `html` or `url` is required.
 
@@ -389,9 +383,7 @@ Generate PDF from HTML or URL.
 
 Start browser connection.
 
-| Argument       | Type   | Required | Default | Description               |
-| -------------- | ------ | -------- | ------- | ------------------------- |
-| browserlessUrl | string | No       | -       | Browserless WebSocket URL |
+No arguments required.
 
 ### browser.stop
 

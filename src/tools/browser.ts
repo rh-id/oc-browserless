@@ -3,13 +3,8 @@ import { getBrowserManager, resetBrowserManager } from '../browser/manager.js';
 
 export const start = tool({
   description: 'Start a browserless connection',
-  args: {
-    browserlessUrl: tool.schema
-      .string()
-      .optional()
-      .describe('Browserless WebSocket URL (optional, uses env var by default)'),
-  },
-  async execute(args) {
+  args: {},
+  async execute() {
     const browserManager = getBrowserManager();
 
     try {
@@ -20,7 +15,7 @@ export const start = tool({
         });
       }
 
-      const wsUrl = args.browserlessUrl || process.env.BROWSERLESS_URL || '';
+      const wsUrl = process.env.BROWSERLESS_URL || '';
 
       await browserManager.connect(wsUrl);
 

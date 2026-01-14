@@ -26,10 +26,6 @@ export default tool({
       .string()
       .default('0cm')
       .describe('Right margin (e.g., "1cm", "0.5in")'),
-    browserlessUrl: tool.schema
-      .string()
-      .optional()
-      .describe('Browserless WebSocket URL (optional, uses env var by default)'),
   },
   async execute(args) {
     const browserManager = getBrowserManager();
@@ -49,7 +45,7 @@ export default tool({
     }
 
     try {
-      const wsUrl = args.browserlessUrl || process.env.BROWSERLESS_URL || '';
+      const wsUrl = process.env.BROWSERLESS_URL || '';
 
       if (!browserManager.isConnected()) {
         await browserManager.connect(wsUrl);

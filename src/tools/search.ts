@@ -10,17 +10,13 @@ export default tool({
   description: 'Search web using DuckDuckGo and return raw HTML content',
   args: {
     query: tool.schema.string().describe('The search query'),
-    browserlessUrl: tool.schema
-      .string()
-      .optional()
-      .describe('Browserless WebSocket URL (optional, uses env var by default)'),
   },
   async execute(args) {
     const browserManager = getBrowserManager();
 
     try {
       const url = buildDuckDuckGoUrl(args.query);
-      const wsUrl = args.browserlessUrl || process.env.BROWSERLESS_URL || '';
+      const wsUrl = process.env.BROWSERLESS_URL || '';
 
       if (!browserManager.isConnected()) {
         await browserManager.connect(wsUrl);
