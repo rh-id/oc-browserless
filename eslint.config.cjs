@@ -31,6 +31,6 @@ module.exports = [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', '*.config.js', '.opencode/**'],
+    ignores: ['dist/**', 'node_modules/**', '*.config.js', '.opencode/**', 'scripts/**'],
   },
 ];

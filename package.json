@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "tsc && bun run build:copy",
-    "build:copy": "mkdir -p .opencode/plugin .opencode/tool .opencode/browser .opencode/utils && cp dist/plugin/browserless.js .opencode/plugin/ && cp dist/plugin/browserless.d.ts .opencode/plugin/ && cp dist/tools/*.js .opencode/tool/ && cp dist/browser/*.js .opencode/browser/ && cp dist/browser/*.d.ts .opencode/browser/ && cp dist/utils/*.js .opencode/utils/ && cp dist/utils/*.d.ts .opencode/utils/ && node -e \"const pkg = require('./package.json'); const deps = { dependencies: {} }; ['@opencode-ai/plugin', 'puppeteer-core'].forEach(d => { if(pkg.dependencies[d]) deps.dependencies[d] = pkg.dependencies[d]; }); require('fs').writeFileSync('.opencode/package.json', JSON.stringify(deps, null, 2));\"",
+    "build:copy": "node scripts/build-copy.js",
     "clean": "rm -rf dist .opencode",
     "reset": "bun run clean && bun install && bun run build",
     "test": "bun test",
