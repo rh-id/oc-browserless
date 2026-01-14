@@ -1,5 +1,5 @@
 import { tool } from '@opencode-ai/plugin';
-import { getBrowserManager } from '../../src/browser/manager.js';
+import { getBrowserManager } from '../browser/manager.js';
 import { isValidUrl } from '../utils/common.js';
 
 export default tool({
