@@ -11,7 +11,7 @@ Browserless plugin for OpenCode using puppeteer-core.
 - **DuckDuckGo Search**: Search the web with raw HTML content
 - **Screenshots**: Capture screenshots in PNG, JPEG, and WebP formats
 - **PDF Generation**: Convert HTML or URLs to PDF documents
-- **Browser Lifecycle Management**: Manual control over browser connections
+- **Browser Lifecycle Management**: Automatic browser connection management
 
 ## Installation
 
