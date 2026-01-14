@@ -167,52 +167,34 @@ oc-browserless/
 ├── .husky/                    # Git hooks
 │   └── pre-commit              # Pre-commit lint-staged
 ├── .opencode/                  # OpenCode plugin files (compiled for local dev)
-│   ├── plugin/                # Compiled plugin
-│   │   ├── browserless.js    # Plugin entry point
-│   │   └── browserless.d.ts  # Type declarations
-│   └── tool/                  # Compiled tools
-│       ├── browse.js         # Navigate and browse web pages
-│       ├── search.js         # DuckDuckGo search
-│       ├── screenshot.js     # Screenshot capture
-│       ├── pdf.js            # PDF generation
-│       └── browser.js        # Browser lifecycle management
+│   ├── plugin/                 # Compiled plugin
+│   │   └── browserless.js     # Plugin entry point (all code)
+│   └── package.json           # Dependencies for local dev
 ├── dist/                       # Compiled output (published to npm)
-│   ├── plugin/
-│   │   ├── browserless.js
-│   │   └── browserless.d.ts
-│   └── tools/
-│       ├── browse.js
-│       ├── search.js
-│       ├── screenshot.js
-│       ├── pdf.js
-│       └── browser.js
+│   └── plugin/
+│       ├── browserless.js      # Compiled plugin
+│       ├── browserless.d.ts    # Type declarations
+│       ├── browserless.js.map  # Source map
+│       └── browserless.d.ts.map # Type source map
+├── scripts/                    # Build scripts
+│   └── build-copy.js          # Build copy script
 ├── src/                        # Source code (TypeScript)
-│   ├── browser/               # Browser management
-│   │   └── manager.ts         # Browser instance manager
-│   ├── plugin/                # Plugin hooks
-│   │   └── browserless.ts    # Main plugin entry point
-│   ├── tools/                 # Custom tools
-│   │   ├── browse.ts          # Navigate and browse web pages
-│   │   ├── search.ts          # DuckDuckGo search
-│   │   ├── screenshot.ts      # Screenshot capture
-│   │   ├── pdf.ts             # PDF generation
-│   │   └── browser.ts         # Browser lifecycle management
-│   └── utils/                 # Utilities
-│       └── common.ts          # Common utilities
+│   └── plugin/
+│       └── browserless.ts     # Complete plugin (all code, ~613 lines)
 ├── Configuration Files
-│   ├── .gitignore             # Git ignore rules
-│   ├── .gitattributes         # Git attributes
-│   ├── eslint.config.cjs       # ESLint configuration
-│   ├── .prettierrc            # Prettier configuration
-│   ├── .env.example            # Environment variables template
-│   ├── .release-please-manifest.json  # Release configuration
-│   ├── opencode.json           # OpenCode configuration
-│   ├── package.json            # NPM package configuration
-│   └── tsconfig.json          # TypeScript configuration
+│   ├── .gitignore
+│   ├── .gitattributes
+│   ├── eslint.config.cjs
+│   ├── .prettierrc
+│   ├── .env.example
+│   ├── .release-please-manifest.json
+│   ├── opencode.json
+│   ├── package.json
+│   └── tsconfig.json
 └── Documentation
-    ├── README.md               # Main documentation
-    ├── CONTRIBUTING.md         # Contributing guidelines
-    └── LICENSE                # MIT License
+    ├── README.md
+    ├── CONTRIBUTING.md
+    └── LICENSE
 ```
 
 ## Usage
@@ -282,45 +264,16 @@ The plugin provides the following tools for OpenCode:
 }
 ```
 
-### Browser Management
-
-```typescript
-// Start browser
-{
-  "tool": "browser.start",
-  "args": {}
-}
-
-// Stop browser
-{
-  "tool": "browser.stop",
-  "args": {}
-}
-
-// Check status
-{
-  "tool": "browser.status",
-  "args": {}
-}
-```
-
 ## Browser Lifecycle
 
-**Important**: Always manage browser connections properly:
+All browser operations automatically manage their own connections:
 
-1. **Start browser** before operations:
-
-   ```
-   browser.start()
-   ```
-
-2. **Stop browser** when done:
-
-   ```
-   browser.stop()
-   ```
-
-3. The plugin auto-disconnects on session completion, but you should always manually stop the browser when finalizing your response.
+- **No manual start/stop required** - tools handle this internally
+- Each tool execution creates an isolated browser instance
+- Browser sessions are **NOT** persistent across tool calls
+- Browserless supports multiple concurrent connections automatically
+- Each tool operates in isolation with no shared state
+- No connection reuse - each operation creates fresh browser instance
 
 ## API Reference
 
@@ -393,26 +346,6 @@ Generate PDF from HTML or URL.
 | marginRight     | string  | No       | 0cm     | Right margin      |
 
 \*Either `html` or `url` is required.
-
-### browser.start
-
-Start browser connection.
-
-No arguments required.
-
-### browser.stop
-
-Stop browser connection.
-
-| Argument | Type    | Required | Default | Description      |
-| -------- | ------- | -------- | ------- | ---------------- |
-| force    | boolean | No       | false   | Force disconnect |
-
-### browser.status
-
-Check connection status.
-
-No arguments required.
 
 ## Development
 
@@ -532,11 +465,12 @@ curl http://localhost:3000/health
 
 ### Browser Disconnected
 
-**Error**: "Browser not connected"
+**Error**: "Browser not connected" or connection failures
 
-- Call `browser.start()` before operations
-- Check connection status with `browser.status()`
-- Restart browser if connection is lost
+- Check `BROWSERLESS_URL` environment variable
+- Ensure browserless instance is running
+- Each tool creates its own connection - no manual management needed
+- Try running the tool again if connection fails
 
 ### TypeScript Errors
 
@@ -613,6 +547,14 @@ bun run reset
 rm -rf dist
 bun run build
 ```
+
+## Donate / Sponsor
+
+If you find this project useful and would like to support its continued development, consider making a donation or becoming a sponsor:
+
+[https://teer.id/rh-id](https://teer.id/rh-id)
+
+Your support helps maintain and improve the project. Thank you! ❤️
 
 ## License
 
