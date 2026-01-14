@@ -197,6 +197,65 @@ oc-browserless/
     └── LICENSE
 ```
 
+## Plugin Development
+
+For contributors working on the plugin locally:
+
+### Local Testing Workflow
+
+1. Make your changes to `src/plugin/browserless.ts`
+
+2. Build the project:
+
+   ```bash
+   bun run build
+   ```
+
+   This compiles TypeScript and copies the output to `.opencode/plugin/` directory
+
+3. The `.opencode/` directory is used for local development with OpenCode:
+   - It contains the compiled plugin code
+   - When the package is published to npm, only the `dist/` directory is included
+   - Running `opencode` in the project root automatically loads the plugin from `.opencode/plugin/`
+
+4. Test your changes:
+
+   ```bash
+   opencode
+   ```
+
+   The plugin is automatically loaded from `.opencode/plugin/` directory
+
+5. Iterate:
+   - Make changes to `src/plugin/browserless.ts`
+   - Run `bun run build` to update `.opencode/plugin/`
+   - Test with `opencode`
+
+### Project Structure for Development
+
+```
+src/plugin/
+  └── browserless.ts     # Source code (edit this)
+
+dist/plugin/              # Compiled output (published to npm)
+  ├── browserless.js
+  ├── browserless.d.ts
+  └── browserless.js.map
+
+.opencode/plugin/         # Local dev copy (for testing with opencode)
+  └── browserless.js      # Same compiled code as dist/plugin/browserless.js
+```
+
+### Build Process
+
+The `bun run build` command:
+
+1. Compiles TypeScript files to JavaScript in `dist/` directory
+2. Generates type declarations (`.d.ts`)
+3. Copies compiled files to `.opencode/` for local OpenCode testing
+
+**Note**: Always run `bun run build` after making changes to test them locally.
+
 ## Usage
 
 The plugin provides the following tools for OpenCode:
@@ -222,6 +281,16 @@ The plugin provides the following tools for OpenCode:
   "args": {
     "query": "TypeScript best practices"
   }
+}
+```
+
+**Returns:**
+
+```json
+{
+  "success": true,
+  "query": "TypeScript best practices",
+  "html": "<html>...</html>"
 }
 ```
 
