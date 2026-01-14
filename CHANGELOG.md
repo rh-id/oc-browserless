@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.1...oc-browserless-v0.1.2) (2026-01-14)
+
+
+### Bug Fixes
+
+* add URL validation to screenshotTool ([740ff63](https://github.com/rh-id/oc-browserless/commit/740ff6394d16f4f25776f287c1d80c4fe77c6525))
+* remove confusing pages field from pdf tool ([a76d88e](https://github.com/rh-id/oc-browserless/commit/a76d88e6738cccaaa2f7a0d9023f735fb64c338e))
+
 ## [0.1.1](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.0...oc-browserless-v0.1.1) (2026-01-14)
 
 
