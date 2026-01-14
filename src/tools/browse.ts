@@ -34,15 +34,15 @@ export default tool({
     try {
       await browserManager.connect(wsUrl);
       const page = await browserManager.getPage();
-
+      const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
       await page.goto(args.url, {
         waitUntil: 'networkidle2',
-        timeout: parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10),
+        timeout,
       });
 
       if (args.waitForSelector) {
         await page.waitForSelector(args.waitForSelector, {
-          timeout: 10000,
+          timeout,
         });
       }
 
