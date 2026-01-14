@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.0...oc-browserless-v0.1.1) (2026-01-14)
+
+
+### Bug Fixes
+
+* make release workflow idempotent for npm publish retries ([eb187bd](https://github.com/rh-id/oc-browserless/commit/eb187bd049d31e3fdf4bcfb26e33225245530a8e))
+
 ## [0.1.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.0.1...oc-browserless-v0.1.0) (2026-01-14)
 
 
