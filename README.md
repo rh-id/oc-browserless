@@ -7,7 +7,7 @@ Browserless plugin for OpenCode using puppeteer-core.
 
 ## Features
 
-- **Web Browsing**: Navigate and browse web pages with content extraction
+- **Web Browsing**: Navigate and browse web pages with content extraction and security certificate information
 - **DuckDuckGo Search**: Search the web with raw HTML content
 - **Screenshots**: Capture screenshots in PNG, JPEG, and WebP formats
 - **PDF Generation**: Convert HTML or URLs to PDF documents
@@ -226,9 +226,7 @@ The plugin provides the following tools for OpenCode:
 {
   "tool": "browse",
   "args": {
-    "url": "https://example.com",
-    "waitForSelector": ".content",
-    "extractContent": true
+    "url": "https://example.com"
   }
 }
 ```
@@ -330,13 +328,30 @@ The plugin provides the following tools for OpenCode:
 
 Navigate to and browse web pages.
 
-| Argument        | Type    | Required | Default | Description                |
-| --------------- | ------- | -------- | ------- | -------------------------- |
-| url             | string  | Yes      | -       | URL to navigate to         |
-| waitForSelector | string  | No       | -       | CSS selector to wait for   |
-| scrollTo        | string  | No       | -       | CSS selector to scroll to  |
-| executeScript   | string  | No       | -       | JavaScript code to execute |
-| extractContent  | boolean | No       | true    | Extract page content       |
+| Argument | Type   | Required | Default | Description        |
+| -------- | ------ | -------- | ------- | ------------------ |
+| url      | string | Yes      | -       | URL to navigate to |
+
+**Returns:**
+
+```json
+{
+  "success": true,
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "content": "<html>...</html>",
+  "certificate": {
+    "issuer": "CN=DigiCert Inc",
+    "protocol": "TLS 1.3",
+    "subjectName": "CN=example.com",
+    "subjectAlternativeNames": ["example.com", "www.example.com"],
+    "validFrom": 1234567890,
+    "validTo": 1234567890
+  }
+}
+```
+
+The `certificate` field is `null` for HTTP connections or when security details are unavailable.
 
 ### search
 

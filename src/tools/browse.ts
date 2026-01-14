@@ -9,19 +9,6 @@ export default tool({
       .string()
       .describe('The URL to navigate to')
       .refine(isValidUrl, 'Invalid URL format'),
-    waitForSelector: tool.schema
-      .string()
-      .optional()
-      .describe('CSS selector to wait for before returning'),
-    scrollTo: tool.schema.string().optional().describe('CSS selector to scroll to'),
-    executeScript: tool.schema
-      .string()
-      .optional()
-      .describe('JavaScript code to execute in the page context'),
-    extractContent: tool.schema
-      .boolean()
-      .default(true)
-      .describe('Whether to extract and return page content'),
   },
   async execute(args) {
     const browserManager = createBrowserManager();
@@ -35,42 +22,36 @@ export default tool({
       await browserManager.connect(wsUrl);
       const page = await browserManager.getPage();
       const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
-      await page.goto(args.url, {
+      const response = await page.goto(args.url, {
         waitUntil: 'networkidle2',
         timeout,
       });
 
-      if (args.waitForSelector) {
-        await page.waitForSelector(args.waitForSelector, {
-          timeout,
-        });
-      }
-
-      if (args.scrollTo) {
-        await page.$eval(args.scrollTo, (element: any) => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-      }
-
-      let scriptResult: any = undefined;
-      if (args.executeScript) {
-        scriptResult = await page.evaluate(args.executeScript);
-      }
-
-      let content: string | null = null;
-      if (args.extractContent) {
-        content = await page.content();
+      let certificate: any = null;
+      if (response) {
+        const securityDetails = await response.securityDetails();
+        if (securityDetails) {
+          certificate = {
+            issuer: securityDetails.issuer(),
+            protocol: securityDetails.protocol(),
+            subjectName: securityDetails.subjectName(),
+            subjectAlternativeNames: securityDetails.subjectAlternativeNames(),
+            validFrom: securityDetails.validFrom(),
+            validTo: securityDetails.validTo(),
+          };
+        }
       }
 
       const title = await page.title();
       const url = page.url();
+      const content = await page.content();
 
       result = {
         success: true,
         url,
         title,
-        content: content ?? null,
-        scriptResult,
+        content,
+        certificate,
       };
     } catch (error) {
       mainError = error as Error;
