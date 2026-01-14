@@ -73,7 +73,7 @@ export class BrowserManager {
   }
 
   isConnected(): boolean {
-    return this.browser !== null && this.browser.isConnected();
+    return this.browser !== null && this.browser.connected;
   }
 
   async getPage(): Promise<Page> {
@@ -81,7 +81,7 @@ export class BrowserManager {
       throw new Error('Browser not connected. Call connect() first.');
     }
 
-    if (!this.browser?.isConnected()) {
+    if (!this.browser?.connected) {
       throw new Error('Browser connection lost');
     }
 
