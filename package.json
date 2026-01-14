@@ -1,6 +1,6 @@
 {
   "name": "oc-browserless",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Browserless plugin for OpenCode using puppeteer-core",
   "type": "module",
   "main": "./dist/plugin/browserless.js",
