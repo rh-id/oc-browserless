@@ -28,6 +28,13 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Run release-please
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          command: manifest
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Check if package exists on npm
         id: check_npm
         run: |
@@ -38,20 +45,12 @@ jobs:
             echo "should_publish=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run release-please
-        if: steps.check_npm.outputs.should_publish == 'true'
-        uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          command: manifest
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build
-        if: steps.check_npm.outputs.should_publish == 'true'
+        if: steps.release.outputs.release_created == 'true' || steps.check_npm.outputs.should_publish == 'true'
         run: bun run build
 
       - name: Publish to npm
-        if: steps.check_npm.outputs.should_publish == 'true'
+        if: steps.release.outputs.release_created == 'true' || steps.check_npm.outputs.should_publish == 'true'
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
