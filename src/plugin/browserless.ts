@@ -1,42 +1,20 @@
-import { getBrowserManager } from '../browser/manager.js';
-
 export const BrowserlessPlugin = async () => {
   return {
-    event: async ({ event }: { event: any }) => {
-      if (event.type === 'session.created') {
-        return;
-      }
-      if (event.type === 'session.updated') {
-        const browserManager = getBrowserManager();
-        if (browserManager.isConnected()) {
-          await browserManager.disconnect();
-        }
-      }
-      if (event.type === 'session.error') {
-        const browserManager = getBrowserManager();
-        if (browserManager.isConnected()) {
-          await browserManager.disconnect();
-        }
-      }
-    },
     'experimental.chat.system.transform': async (input: any, output: any) => {
       output.system.push(`
 # Browserless Plugin Guidelines
 
 ## Browser Lifecycle Management
-1. Use \`browser.start()\` before any browser operations
-2. Always call \`browser.stop()\` when finalizing response
-3. Browser sessions are NOT persistent across opencode sessions
-4. Browser instances are limited, manage connections carefully
+- All browser operations automatically manage their own connections
+- No manual start/stop required - tools handle this internally
+- Each tool execution creates an isolated browser instance
+- Browser sessions are NOT persistent across tool calls
 
 ## Available Tools
 - \`browse\` - Navigate to and browse web pages
 - \`search\` - Search using DuckDuckGo (returns JSON with HTML)
 - \`screenshot\` - Capture screenshots in PNG/JPEG/WebP formats
 - \`pdf\` - Generate PDF from HTML or URLs
-- \`browser.start\` - Start browserless connection
-- \`browser.stop\` - Stop and disconnect browser
-- \`browser.status\` - Check browser connection status
 
 ## Environment Configuration
 Set \`BROWSERLESS_URL\` env variable to your browserless instance:
@@ -45,9 +23,10 @@ Set \`BROWSERLESS_URL\` env variable to your browserless instance:
 - Remote with API key: Set \`BROWSERLESS_API_KEY\`
 
 ## Important Notes
-- Always stop browser before session completes to avoid broken connections
-- Screenshot and PDF tools auto-manage browser connections
-- DuckDuckGo search can use fetch API (faster) or browser (for complex pages)
+- Browserless supports multiple concurrent connections automatically
+- Each tool operates in isolation with no shared state
+- Connection errors and disconnection errors are both reported
+- No connection reuse - each operation creates fresh browser instance
 `);
     },
   };

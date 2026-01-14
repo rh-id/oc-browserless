@@ -1,5 +1,5 @@
 import { tool } from '@opencode-ai/plugin';
-import { getBrowserManager } from '../browser/manager.js';
+import { createBrowserManager } from '../browser/manager.js';
 
 export default tool({
   description: 'Generate PDF from HTML content or URL using browserless',
@@ -28,8 +28,6 @@ export default tool({
       .describe('Right margin (e.g., "1cm", "0.5in")'),
   },
   async execute(args) {
-    const browserManager = getBrowserManager();
-
     if (!args.html && !args.url) {
       return JSON.stringify({
         success: false,
@@ -44,19 +42,22 @@ export default tool({
       });
     }
 
+    const browserManager = createBrowserManager();
+    const wsUrl = process.env.BROWSERLESS_URL || '';
+    const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+
+    let disconnectError: Error | null = null;
+    let mainError: Error | null = null;
+    let result: any;
+
     try {
-      const wsUrl = process.env.BROWSERLESS_URL || '';
-
-      if (!browserManager.isConnected()) {
-        await browserManager.connect(wsUrl);
-      }
-
+      await browserManager.connect(wsUrl);
       const page = await browserManager.getPage();
 
       if (args.url) {
         await page.goto(args.url, {
           waitUntil: 'networkidle2',
-          timeout: 30000,
+          timeout,
         });
       } else {
         await page.setContent(args.html!, {
@@ -76,7 +77,7 @@ export default tool({
         },
       };
 
-      let result: {
+      let pdfResult: {
         path?: string;
         base64?: string;
         format: string;
@@ -90,7 +91,7 @@ export default tool({
         };
         await page.pdf(pdfOptionsWithFile as any);
 
-        result = {
+        pdfResult = {
           path: args.path,
           format: args.format,
           pages: 1,
@@ -99,22 +100,40 @@ export default tool({
         const buffer = await page.pdf(pdfOptions as any);
         const base64 = (buffer as Buffer).toString('base64');
 
-        result = {
+        pdfResult = {
           base64,
           format: args.format,
           pages: 1,
         };
       }
 
-      return JSON.stringify({
+      result = {
         success: true,
-        ...result,
-      });
+        ...pdfResult,
+      };
     } catch (error) {
+      mainError = error as Error;
+      result = {
+        success: false,
+        error: mainError.message,
+        disconnected: false,
+      };
+    } finally {
+      try {
+        await browserManager.disconnect();
+      } catch (error) {
+        disconnectError = error as Error;
+      }
+    }
+
+    if (!mainError && disconnectError) {
       return JSON.stringify({
         success: false,
-        error: (error as Error).message,
+        error: disconnectError.message,
+        disconnected: true,
       });
     }
+
+    return JSON.stringify(result);
   },
 });

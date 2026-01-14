@@ -1,5 +1,5 @@
 import { tool } from '@opencode-ai/plugin';
-import { getBrowserManager } from '../browser/manager.js';
+import { createBrowserManager } from '../browser/manager.js';
 
 export default tool({
   description: 'Take screenshots of web pages using browserless',
@@ -40,15 +40,16 @@ export default tool({
       .describe('Viewport height in pixels'),
   },
   async execute(args) {
-    const browserManager = getBrowserManager();
+    const browserManager = createBrowserManager();
+    const wsUrl = process.env.BROWSERLESS_URL || '';
+    const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+
+    let disconnectError: Error | null = null;
+    let mainError: Error | null = null;
+    let result: any;
 
     try {
-      const wsUrl = process.env.BROWSERLESS_URL || '';
-
-      if (!browserManager.isConnected()) {
-        await browserManager.connect(wsUrl);
-      }
-
+      await browserManager.connect(wsUrl);
       const page = await browserManager.getPage();
 
       if (args.viewportWidth || args.viewportHeight) {
@@ -61,11 +62,11 @@ export default tool({
       if (args.url) {
         await page.goto(args.url, {
           waitUntil: 'networkidle2',
-          timeout: 30000,
+          timeout,
         });
       }
 
-      let result: {
+      let screenshotResult: {
         path?: string;
         base64?: string;
         format: string;
@@ -76,7 +77,7 @@ export default tool({
       };
 
       if (args.path) {
-        result = {
+        screenshotResult = {
           path: args.path,
           format: args.format,
           size: {
@@ -99,7 +100,7 @@ export default tool({
 
         const viewport = page.viewport();
 
-        result = {
+        screenshotResult = {
           base64,
           format: args.format,
           size: {
@@ -109,15 +110,33 @@ export default tool({
         };
       }
 
-      return JSON.stringify({
+      result = {
         success: true,
-        ...result,
-      });
+        ...screenshotResult,
+      };
     } catch (error) {
+      mainError = error as Error;
+      result = {
+        success: false,
+        error: mainError.message,
+        disconnected: false,
+      };
+    } finally {
+      try {
+        await browserManager.disconnect();
+      } catch (error) {
+        disconnectError = error as Error;
+      }
+    }
+
+    if (!mainError && disconnectError) {
       return JSON.stringify({
         success: false,
-        error: (error as Error).message,
+        error: disconnectError.message,
+        disconnected: true,
       });
     }
+
+    return JSON.stringify(result);
   },
 });

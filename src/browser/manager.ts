@@ -1,26 +1,18 @@
 import type { Browser, Page, BrowserContext } from 'puppeteer-core';
 
 export interface BrowserlessOptions {
-  wsUrl?: string;
-  apiKey?: string;
   timeout?: number;
-}
-
-export interface BrowserConfig {
-  url: string;
-  options: {
-    headless?: boolean;
-    args?: string[];
-  };
 }
 
 export class BrowserManager {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
   private page: Page | null = null;
-  private connectionAttempts = 0;
-  private readonly maxRetryAttempts = 3;
-  private readonly defaultTimeout = 30000;
+  private readonly defaultTimeout: number;
+
+  constructor() {
+    this.defaultTimeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+  }
 
   async connect(wsUrl: string, options: BrowserlessOptions = {}): Promise<void> {
     if (this.browser) {
@@ -30,46 +22,49 @@ export class BrowserManager {
     const { timeout = this.defaultTimeout } = options;
     const puppeteer = await import('puppeteer-core');
 
-    try {
-      this.browser = await puppeteer.connect({
-        browserWSEndpoint: wsUrl,
-      });
+    this.browser = await puppeteer.connect({
+      browserWSEndpoint: wsUrl,
+    });
 
-      this.context = await this.browser.createBrowserContext();
-      this.page = await this.context.newPage();
+    this.context = await this.browser.createBrowserContext();
+    this.page = await this.context.newPage();
 
-      await this.page.setDefaultTimeout(timeout);
-
-      this.connectionAttempts = 0;
-    } catch (error) {
-      this.connectionAttempts++;
-
-      if (this.connectionAttempts < this.maxRetryAttempts) {
-        await this.sleep(1000 * this.connectionAttempts);
-        return this.connect(wsUrl, options);
-      }
-
-      throw new Error(`Failed to connect to browserless: ${(error as Error).message}`);
-    }
+    await this.page.setDefaultTimeout(timeout);
   }
 
   async disconnect(): Promise<void> {
+    const errors: Error[] = [];
+
     if (this.page) {
-      await this.page.close().catch(() => {});
+      try {
+        await this.page.close();
+      } catch (error) {
+        errors.push(error as Error);
+      }
       this.page = null;
     }
 
     if (this.context) {
-      await this.context.close().catch(() => {});
+      try {
+        await this.context.close();
+      } catch (error) {
+        errors.push(error as Error);
+      }
       this.context = null;
     }
 
     if (this.browser) {
-      await this.browser.disconnect().catch(() => {});
+      try {
+        await this.browser.disconnect();
+      } catch (error) {
+        errors.push(error as Error);
+      }
       this.browser = null;
     }
 
-    this.connectionAttempts = 0;
+    if (errors.length > 0) {
+      throw new Error(`Failed to disconnect: ${errors.map(e => e.message).join(', ')}`);
+    }
   }
 
   isConnected(): boolean {
@@ -87,31 +82,8 @@ export class BrowserManager {
 
     return this.page;
   }
-
-  async restart(): Promise<void> {
-    const wsUrl = this.getBrowserWSEndpoint();
-    await this.disconnect();
-    await this.connect(wsUrl);
-  }
-
-  private getBrowserWSEndpoint(): string {
-    return this.browser?.wsEndpoint() || '';
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
 }
 
-let browserManager: BrowserManager | null = null;
-
-export function getBrowserManager(): BrowserManager {
-  if (!browserManager) {
-    browserManager = new BrowserManager();
-  }
-  return browserManager;
-}
-
-export function resetBrowserManager(): void {
-  browserManager = null;
+export function createBrowserManager(): BrowserManager {
+  return new BrowserManager();
 }

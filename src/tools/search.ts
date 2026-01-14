@@ -1,5 +1,5 @@
 import { tool } from '@opencode-ai/plugin';
-import { getBrowserManager } from '../browser/manager.js';
+import { createBrowserManager } from '../browser/manager.js';
 
 function buildDuckDuckGoUrl(query: string): string {
   const encodedQuery = encodeURIComponent(query);
@@ -12,35 +12,55 @@ export default tool({
     query: tool.schema.string().describe('The search query'),
   },
   async execute(args) {
-    const browserManager = getBrowserManager();
+    const browserManager = createBrowserManager();
+    const wsUrl = process.env.BROWSERLESS_URL || '';
+    const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+
+    let disconnectError: Error | null = null;
+    let mainError: Error | null = null;
+    let result: any;
 
     try {
       const url = buildDuckDuckGoUrl(args.query);
-      const wsUrl = process.env.BROWSERLESS_URL || '';
 
-      if (!browserManager.isConnected()) {
-        await browserManager.connect(wsUrl);
-      }
-
+      await browserManager.connect(wsUrl);
       const page = await browserManager.getPage();
 
       await page.goto(url, {
         waitUntil: 'networkidle2',
-        timeout: 30000,
+        timeout,
       });
 
       const html = await page.content();
 
-      return JSON.stringify({
+      result = {
         success: true,
         query: args.query,
         html,
-      });
+      };
     } catch (error) {
+      mainError = error as Error;
+      result = {
+        success: false,
+        error: mainError.message,
+        disconnected: false,
+      };
+    } finally {
+      try {
+        await browserManager.disconnect();
+      } catch (error) {
+        disconnectError = error as Error;
+      }
+    }
+
+    if (!mainError && disconnectError) {
       return JSON.stringify({
         success: false,
-        error: (error as Error).message,
+        error: disconnectError.message,
+        disconnected: true,
       });
     }
+
+    return JSON.stringify(result);
   },
 });
