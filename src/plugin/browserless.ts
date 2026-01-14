@@ -340,6 +340,13 @@ const screenshotTool = tool({
         error: 'BROWSERLESS_URL environment variable is not set',
       });
     }
+
+    if (!args.url) {
+      return JSON.stringify({
+        success: false,
+        error: 'URL is required',
+      });
+    }
     const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
 
     let disconnectError: Error | null = null;
