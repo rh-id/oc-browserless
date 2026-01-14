@@ -148,22 +148,13 @@ This will:
 
 ### 4. Test with OpenCode
 
-Add to your `opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": ["."]
-}
-```
-
-Run opencode and test:
+Run opencode in the project directory:
 
 ```bash
 opencode
 ```
 
-**Note**: Use `"plugin": ["."]` for local development. If you've installed the package via npm (`npm install oc-browserless`), use `"plugin": ["oc-browserless"]` instead.
+The plugin is automatically loaded from `.opencode/plugin/` directory.
 
 ## Project Structure
 
