@@ -1,0 +1,8 @@
+{
+  "packages": {
+    ".": {
+      "component": "oc-browserless",
+      "release-type": "node"
+    }
+  }
+}
