@@ -598,6 +598,62 @@ export const BrowserlessPlugin = async () => {
 - \`screenshot\` - Capture screenshots in PNG/JPEG/WebP formats
 - \`pdf\` - Generate PDF from HTML or URLs
 
+## Return Structures
+All tools return JSON with the following structures:
+
+### browse
+\`\`\`json
+{
+  "success": boolean,      // true if page loaded successfully
+  "url": string | undefined,        // actual URL after redirects
+  "title": string | undefined,      // page title
+  "content": string | undefined,     // HTML content of the page
+  "certificate": {
+    "issuer": string,               // certificate issuer
+    "protocol": string,             // SSL/TLS protocol (e.g., TLS 1.2)
+    "subjectName": string,          // certificate subject
+    "subjectAlternativeNames": string[] | undefined,  // alternative domain names
+    "validFrom": number,            // validity start timestamp
+    "validTo": number               // validity end timestamp
+  } | null | undefined,             // null for HTTP, undefined if unavailable
+  "error": string | undefined       // error message if failed
+}
+\`\`\`
+
+### search
+\`\`\`json
+{
+  "success": boolean,      // true if search completed
+  "query": string | undefined,       // original search query
+  "html": string | undefined,        // raw HTML of DuckDuckGo results page
+  "error": string | undefined       // error message if failed
+}
+\`\`\`
+
+### screenshot
+\`\`\`json
+{
+  "success": boolean,      // true if screenshot captured
+  "path": string | undefined,       // file path if saved to disk
+  "base64": string | undefined,     // base64-encoded image if not saved
+  "format": string | undefined,     // image format (png/jpeg/webp)
+  "error": string | undefined       // error message if failed
+}
+\`\`\`
+Either \`path\` or \`base64\` is returned depending on whether output file path is provided.
+
+### pdf
+\`\`\`json
+{
+  "success": boolean,      // true if PDF generated
+  "path": string | undefined,       // file path if saved to disk
+  "base64": string | undefined,     // base64-encoded PDF if not saved
+  "format": string | undefined,     // paper format (A4, Letter, etc.)
+  "error": string | undefined       // error message if failed
+}
+\`\`\`
+Either \`path\` or \`base64\` is returned depending on whether output file path is provided.
+
 ## Environment Configuration
 Set \`BROWSERLESS_URL\` env variable to your browserless instance:
 - Local: \`ws://localhost:3000\`
