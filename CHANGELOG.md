@@ -2,20 +2,9 @@
 
 ## [0.2.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.2...oc-browserless-v0.2.0) (2026-02-03)
 
-
-### Features
-
-* simplify browse tool and add automatic certificate extraction ([a80558a](https://github.com/rh-id/oc-browserless/commit/a80558aa56fdec228021081cdf8ba8e6eaac171f))
-
-
 ### Bug Fixes
 
 * add return structures documentation to system prompt ([0750c0b](https://github.com/rh-id/oc-browserless/commit/0750c0b93fef41e989668b27440f1b5a61a06438))
-* add URL validation to screenshotTool ([740ff63](https://github.com/rh-id/oc-browserless/commit/740ff6394d16f4f25776f287c1d80c4fe77c6525))
-* complete build script and fix import path for opencode plugin ([5688d0b](https://github.com/rh-id/oc-browserless/commit/5688d0ba27068f1852f856b1fca727df0093a9d5))
-* make release workflow idempotent for npm publish retries ([eb187bd](https://github.com/rh-id/oc-browserless/commit/eb187bd049d31e3fdf4bcfb26e33225245530a8e))
-* remove confusing pages field from pdf tool ([a76d88e](https://github.com/rh-id/oc-browserless/commit/a76d88e6738cccaaa2f7a0d9023f735fb64c338e))
-* use timetout from env var ([a4412e9](https://github.com/rh-id/oc-browserless/commit/a4412e9603f8fac844de74e45657476627c12453))
 
 ## [0.1.2](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.1...oc-browserless-v0.1.2) (2026-01-14)
 
