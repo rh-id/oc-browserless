@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.2...oc-browserless-v0.2.0) (2026-02-03)
+
+### Bug Fixes
+
+* add return structures documentation to system prompt ([0750c0b](https://github.com/rh-id/oc-browserless/commit/0750c0b93fef41e989668b27440f1b5a61a06438))
+
 ## [0.1.2](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.1...oc-browserless-v0.1.2) (2026-01-14)
 
 
