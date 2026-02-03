@@ -1,5 +1,6 @@
 import { tool } from '@opencode-ai/plugin';
 import type { Browser, Page, BrowserContext } from 'puppeteer-core';
+import sanitizeHtml from 'sanitize-html';
 
 function isValidUrl(url: string): boolean {
   try {
@@ -8,6 +9,74 @@ function isValidUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+async function stripHtmlContent(page: Page): Promise<string> {
+  const html = await page.content();
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const bodyHtml = bodyMatch ? bodyMatch[1] : html;
+
+  const cleanHtml = sanitizeHtml(bodyHtml, {
+    allowedTags: [
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'p',
+      'span',
+      'div',
+      'ul',
+      'ol',
+      'li',
+      'article',
+      'section',
+      'main',
+      'aside',
+      'header',
+      'footer',
+      'nav',
+      'strong',
+      'b',
+      'em',
+      'i',
+      'u',
+      's',
+      'sub',
+      'sup',
+      'br',
+      'hr',
+      'blockquote',
+      'pre',
+      'code',
+      'table',
+      'thead',
+      'tbody',
+      'tfoot',
+      'tr',
+      'th',
+      'td',
+      'figure',
+      'figcaption',
+      'a',
+      'img',
+      'video',
+      'audio',
+    ],
+    allowedAttributes: {
+      a: ['href'],
+      img: ['src', 'alt'],
+      video: ['src'],
+      audio: ['src'],
+    },
+    disallowedTagsMode: 'discard',
+    allowVulnerableTags: false,
+    parseStyleAttributes: false,
+    enforceHtmlBoundary: false,
+  });
+
+  return cleanHtml.trim();
 }
 
 interface BrowserlessOptions {
@@ -191,7 +260,7 @@ const browseTool = tool({
 
       const title = await page.title();
       const actualUrl = page.url();
-      const content = await page.content();
+      const content = await stripHtmlContent(page);
 
       result = {
         success: true,
@@ -261,7 +330,7 @@ const searchTool = tool({
         timeout,
       });
 
-      const html = await page.content();
+      const html = await stripHtmlContent(page);
 
       result = {
         success: true,

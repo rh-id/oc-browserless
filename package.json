@@ -48,11 +48,13 @@
   "homepage": "https://github.com/rh-id/oc-browserless#readme",
   "dependencies": {
     "@opencode-ai/plugin": "^1.1.14",
-    "puppeteer-core": "^23.0.0"
+    "puppeteer-core": "^23.0.0",
+    "sanitize-html": "^2.17.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^25.0.6",
+    "@types/sanitize-html": "^2.16.0",
     "@typescript-eslint/eslint-plugin": "^8.52.0",
     "@typescript-eslint/parser": "^8.52.0",
     "eslint": "^9.39.2",
