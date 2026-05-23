@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.2.0...oc-browserless-v0.3.0) (2026-02-03)
+
+
+### Features
+
+* sanitize HTML before returning browse and search result ([2052a20](https://github.com/rh-id/oc-browserless/commit/2052a20bca5800a821745d462e4ec9707885169f))
+
 ## [0.2.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.1.2...oc-browserless-v0.2.0) (2026-02-03)
 
 ### Bug Fixes
