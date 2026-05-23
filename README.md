@@ -8,7 +8,7 @@ Browserless plugin for OpenCode using puppeteer-core.
 ## Features
 
 - **Web Browsing**: Navigate and browse web pages with content extraction and security certificate information
-- **DuckDuckGo Search**: Search the web with raw HTML content
+- **Web Search**: Search the web using SearXNG (if configured) or DuckDuckGo fallback
 - **Screenshots**: Capture screenshots in PNG, JPEG, and WebP formats
 - **PDF Generation**: Convert HTML or URLs to PDF documents
 - **Browser Lifecycle Management**: Automatic browser connection management
@@ -110,7 +110,40 @@ Edit `.env` with your browserless configuration:
 ```bash
 BROWSERLESS_URL=ws://localhost:3000
 BROWSERLESS_API_KEY=your-api-key-if-using-remote
+
+# Optional: SearXNG instance URL (takes priority over DuckDuckGo)
+SEARXNG_URL=http://localhost:8888
+
+# Optional: Basic auth credentials for SearXNG (leave empty if no auth)
+SEARXNG_BASIC_USER=
+SEARXNG_BASIC_PASSWORD=
 ```
+
+### SearXNG Search (Optional)
+
+If you have a [SearXNG](https://github.com/searxng/searxng) instance, you can use it for search instead of DuckDuckGo. SearXNG returns structured JSON results directly (no browser needed).
+
+**Using Docker:**
+
+```bash
+docker run -p 8888:8080 searxng/searxng:latest
+```
+
+Then set environment variables:
+
+```bash
+export SEARXNG_URL=http://localhost:8888
+```
+
+If your SearXNG instance requires authentication:
+
+```bash
+export SEARXNG_URL=http://localhost:8888
+export SEARXNG_BASIC_USER=myuser
+export SEARXNG_BASIC_PASSWORD=mypassword
+```
+
+When `SEARXNG_URL` is set, the search tool uses SearXNG's JSON API directly without needing a browserless instance. When not set, it falls back to DuckDuckGo via browserless.
 
 ## Development Setup
 
@@ -272,7 +305,7 @@ The plugin provides the following tools for OpenCode:
 }
 ```
 
-### DuckDuckGo Search
+### Web Search
 
 ```typescript
 // Search the web
@@ -284,13 +317,36 @@ The plugin provides the following tools for OpenCode:
 }
 ```
 
-**Returns:**
+**With SearXNG (when `SEARXNG_URL` is set):**
 
 ```json
 {
   "success": true,
   "query": "TypeScript best practices",
-  "html": "<html>...</html>"
+  "results": [
+    {
+      "url": "https://example.com/typescript-tips",
+      "title": "TypeScript Best Practices",
+      "content": "Learn the best practices for writing TypeScript...",
+      "engine": "google",
+      "score": 1.0,
+      "category": "general"
+    }
+  ],
+  "suggestions": ["typescript tutorial", "typescript handbook"],
+  "number_of_results": 1250000,
+  "engine": "searxng"
+}
+```
+
+**With DuckDuckGo (fallback when SearXNG is not configured):**
+
+```json
+{
+  "success": true,
+  "query": "TypeScript best practices",
+  "html": "<html>...</html>",
+  "engine": "duckduckgo"
 }
 ```
 
@@ -377,7 +433,9 @@ The `certificate` field is `null` for HTTP connections or when security details 
 
 ### search
 
-Search using DuckDuckGo.
+Search the web using SearXNG (if configured) or DuckDuckGo (fallback).
+
+When `SEARXNG_URL` is set, uses the SearXNG JSON API directly (no browserless instance needed for search). Otherwise falls back to DuckDuckGo via browserless.
 
 | Argument | Type   | Required | Default | Description  |
 | -------- | ------ | -------- | ------- | ------------ |
@@ -503,6 +561,19 @@ Uses automated versioning with release-please:
 - `BREAKING CHANGE:` → Major version bump (2.0.0)
 
 ## Troubleshooting
+
+### SearXNG Connection Issues
+
+**Error**: "SearXNG request failed: 401 Unauthorized"
+
+- Check `SEARXNG_BASIC_USER` and `SEARXNG_BASIC_PASSWORD` if your instance requires auth
+- If your instance has no auth, make sure `SEARXNG_BASIC_USER` is empty
+
+**Verify SearXNG is running:**
+
+```bash
+curl http://localhost:8888/search?q=test&format=json
+```
 
 ### Connection Issues
 

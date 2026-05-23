@@ -101,10 +101,24 @@ interface BrowseResult {
   error?: string;
 }
 
+interface SearXNGResultItem {
+  url: string;
+  title: string;
+  content: string;
+  engine: string;
+  score: number;
+  category: string;
+  parsed_url?: unknown[];
+}
+
 interface SearchResult {
   success: boolean;
   query?: string;
   html?: string;
+  results?: SearXNGResultItem[];
+  engine?: 'searxng' | 'duckduckgo';
+  suggestions?: string[];
+  number_of_results?: number;
   error?: string;
 }
 
@@ -299,12 +313,66 @@ function buildDuckDuckGoUrl(query: string): string {
   return `https://html.duckduckgo.com/html/?q=${encodedQuery}`;
 }
 
+async function searchWithSearXNG(query: string): Promise<SearchResult> {
+  const searxngUrl = process.env.SEARXNG_URL;
+  if (!searxngUrl) {
+    throw new Error('SEARXNG_URL is not set');
+  }
+
+  const baseUrl = searxngUrl.replace(/\/+$/, '');
+  const encodedQuery = encodeURIComponent(query);
+  const searchUrl = `${baseUrl}/search?q=${encodedQuery}&format=json`;
+
+  const headers: Record<string, string> = {};
+  const user = process.env.SEARXNG_BASIC_USER || '';
+  if (user) {
+    const password = process.env.SEARXNG_BASIC_PASSWORD || '';
+    const credentials = Buffer.from(`${user}:${password}`).toString('base64');
+    headers['Authorization'] = `Basic ${credentials}`;
+  }
+
+  const response = await fetch(searchUrl, { headers });
+  if (!response.ok) {
+    throw new Error(`SearXNG request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as {
+    query?: string;
+    results?: SearXNGResultItem[];
+    suggestions?: string[];
+    number_of_results?: number;
+  };
+
+  return {
+    success: true,
+    query: data.query || query,
+    results: data.results || [],
+    suggestions: data.suggestions || [],
+    number_of_results: data.number_of_results,
+    engine: 'searxng',
+  };
+}
+
 const searchTool = tool({
-  description: 'Search web using DuckDuckGo and return raw HTML content',
+  description: 'Search web using SearXNG (if configured) or DuckDuckGo and return results',
   args: {
     query: tool.schema.string().describe('The search query'),
   },
   async execute(args) {
+    if (process.env.SEARXNG_URL) {
+      try {
+        const result = await searchWithSearXNG(args.query);
+        return JSON.stringify(result);
+      } catch (error) {
+        return JSON.stringify({
+          success: false,
+          query: args.query,
+          engine: 'searxng',
+          error: (error as Error).message,
+        });
+      }
+    }
+
     const browserManager = createBrowserManager();
     const wsUrl = process.env.BROWSERLESS_URL;
     if (!wsUrl) {
@@ -336,6 +404,7 @@ const searchTool = tool({
         success: true,
         query: args.query,
         html,
+        engine: 'duckduckgo',
       };
     } catch (error) {
       mainError = error as Error;
@@ -663,7 +732,7 @@ export const BrowserlessPlugin = async () => {
 
 ## Available Tools
 - \`browse\` - Navigate to and browse web pages
-- \`search\` - Search using DuckDuckGo (returns JSON with HTML)
+- \`search\` - Search using SearXNG (if configured) or DuckDuckGo (returns JSON)
 - \`screenshot\` - Capture screenshots in PNG/JPEG/WebP formats
 - \`pdf\` - Generate PDF from HTML or URLs
 
@@ -690,12 +759,35 @@ All tools return JSON with the following structures:
 \`\`\`
 
 ### search
+When \`SEARXNG_URL\` is set, returns structured JSON results directly from SearXNG API:
 \`\`\`json
 {
-  "success": boolean,      // true if search completed
-  "query": string | undefined,       // original search query
-  "html": string | undefined,        // raw HTML of DuckDuckGo results page
-  "error": string | undefined       // error message if failed
+  "success": true,
+  "query": string,
+  "results": [
+    {
+      "url": string,
+      "title": string,
+      "content": string,
+      "engine": string,
+      "score": number,
+      "category": string
+    }
+  ],
+  "suggestions": string[],
+  "number_of_results": number,
+  "engine": "searxng",
+  "error": string
+}
+\`\`\`
+When SearXNG is not configured, falls back to DuckDuckGo with HTML results:
+\`\`\`json
+{
+  "success": true,
+  "query": string,
+  "html": string,
+  "engine": "duckduckgo",
+  "error": string
 }
 \`\`\`
 
@@ -728,6 +820,12 @@ Set \`BROWSERLESS_URL\` env variable to your browserless instance:
 - Local: \`ws://localhost:3000\`
 - Remote: \`ws://your-browserless.com\`
 - Remote with API key: Set \`BROWSERLESS_API_KEY\`
+
+### SearXNG (Optional - takes priority over DuckDuckGo)
+- \`SEARXNG_URL\` - URL to your SearXNG instance (e.g., \`http://localhost:8888\`)
+- \`SEARXNG_BASIC_USER\` - Basic auth username (leave empty if no auth)
+- \`SEARXNG_BASIC_PASSWORD\` - Basic auth password
+- When configured, search uses SearXNG JSON API directly (no browser needed)
 
 ## Important Notes
 - Browserless supports multiple concurrent connections automatically
