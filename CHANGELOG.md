@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.3.0...oc-browserless-v0.4.0) (2026-05-23)
+
+
+### Features
+
+* **search:** add SearXNG search support with optional basic auth ([713630c](https://github.com/rh-id/oc-browserless/commit/713630c538efa49b7997f07f7551c6c622aed20b))
+
 ## [0.3.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.2.0...oc-browserless-v0.3.0) (2026-02-03)
 
 
