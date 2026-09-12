@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.4.0...oc-browserless-v1.0.0) (2026-09-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* return Markdown content and rename tools with web_ prefix
+
+### Features
+
+* add BROWSERLESS_API_KEY support and harden error handling ([f9e07f2](https://github.com/rh-id/oc-browserless/commit/f9e07f2f4dcbf5bc19729c220521f87d72f18f3a))
+* return Markdown content and rename tools with web_ prefix ([3d09113](https://github.com/rh-id/oc-browserless/commit/3d09113d5850092086dd264d52d2901d16de8c48))
+
 ## [0.4.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.3.0...oc-browserless-v0.4.0) (2026-05-23)
 
 
