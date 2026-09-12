@@ -1,4 +1,5 @@
 import { tool } from '@opencode-ai/plugin';
+import type { Model } from '@opencode-ai/sdk';
 import type { Browser, Page, BrowserContext } from 'puppeteer-core';
 import sanitizeHtml from 'sanitize-html';
 
@@ -9,6 +10,40 @@ function isValidUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+function buildWsUrl(wsUrl: string): string {
+  const apiKey = process.env.BROWSERLESS_API_KEY;
+  if (!apiKey) return wsUrl;
+  // explicit token in the URL always wins
+  if (/[?&]token=/.test(wsUrl)) return wsUrl;
+  return wsUrl + (wsUrl.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(apiKey);
+}
+
+function sanitizeErrorMessage(message: string): string {
+  return message.replace(/([a-z][a-z0-9+.-]*:\/\/[^\s?]*)\?[^\s)]*/gi, '$1?[redacted]');
+}
+
+function parseTimeout(): number {
+  const parsed = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+  return Number.isNaN(parsed) ? 30000 : parsed;
+}
+
+function finalizeResult(
+  result: { success: boolean; error?: string },
+  mainError: Error | null,
+  disconnectError: Error | null,
+): string {
+  if (mainError && disconnectError) {
+    result.error = `${sanitizeErrorMessage(mainError.message)} (disconnect also failed: ${sanitizeErrorMessage(disconnectError.message)})`;
+  }
+  if (!mainError && disconnectError) {
+    return JSON.stringify({
+      success: false,
+      error: sanitizeErrorMessage(disconnectError.message),
+    });
+  }
+  return JSON.stringify(result);
 }
 
 async function stripHtmlContent(page: Page): Promise<string> {
@@ -145,14 +180,10 @@ class BrowserManager {
   private readonly defaultTimeout: number;
 
   constructor() {
-    this.defaultTimeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+    this.defaultTimeout = parseTimeout();
   }
 
   async connect(wsUrl: string, options: BrowserlessOptions = {}): Promise<void> {
-    if (this.browser && this.browser.connected) {
-      return;
-    }
-
     const { timeout = this.defaultTimeout } = options;
     const puppeteer = await import('puppeteer-core');
 
@@ -205,10 +236,6 @@ class BrowserManager {
     }
   }
 
-  isConnected(): boolean {
-    return this.browser !== null && this.browser.connected;
-  }
-
   async getPage(): Promise<Page> {
     if (!this.page) {
       throw new Error('Browser not connected. Call connect() first.');
@@ -249,9 +276,9 @@ const browseTool = tool({
     let result: BrowseResult;
 
     try {
-      await browserManager.connect(wsUrl);
+      await browserManager.connect(buildWsUrl(wsUrl));
       const page = await browserManager.getPage();
-      const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+      const timeout = parseTimeout();
       const response = await page.goto(args.url, {
         waitUntil: 'networkidle2',
         timeout,
@@ -287,7 +314,7 @@ const browseTool = tool({
       mainError = error as Error;
       result = {
         success: false,
-        error: mainError.message,
+        error: sanitizeErrorMessage(mainError.message),
       };
     } finally {
       try {
@@ -297,14 +324,7 @@ const browseTool = tool({
       }
     }
 
-    if (!mainError && disconnectError) {
-      return JSON.stringify({
-        success: false,
-        error: disconnectError.message,
-      });
-    }
-
-    return JSON.stringify(result);
+    return finalizeResult(result, mainError, disconnectError);
   },
 });
 
@@ -331,7 +351,10 @@ async function searchWithSearXNG(query: string): Promise<SearchResult> {
     headers['Authorization'] = `Basic ${credentials}`;
   }
 
-  const response = await fetch(searchUrl, { headers });
+  const response = await fetch(searchUrl, {
+    headers,
+    signal: AbortSignal.timeout(parseTimeout()),
+  });
   if (!response.ok) {
     throw new Error(`SearXNG request failed: ${response.status} ${response.statusText}`);
   }
@@ -368,7 +391,7 @@ const searchTool = tool({
           success: false,
           query: args.query,
           engine: 'searxng',
-          error: (error as Error).message,
+          error: sanitizeErrorMessage((error as Error).message),
         });
       }
     }
@@ -381,7 +404,7 @@ const searchTool = tool({
         error: 'BROWSERLESS_URL environment variable is not set',
       });
     }
-    const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+    const timeout = parseTimeout();
 
     let disconnectError: Error | null = null;
     let mainError: Error | null = null;
@@ -390,7 +413,7 @@ const searchTool = tool({
     try {
       const url = buildDuckDuckGoUrl(args.query);
 
-      await browserManager.connect(wsUrl);
+      await browserManager.connect(buildWsUrl(wsUrl));
       const page = await browserManager.getPage();
 
       await page.goto(url, {
@@ -410,7 +433,7 @@ const searchTool = tool({
       mainError = error as Error;
       result = {
         success: false,
-        error: mainError.message,
+        error: sanitizeErrorMessage(mainError.message),
       };
     } finally {
       try {
@@ -420,14 +443,7 @@ const searchTool = tool({
       }
     }
 
-    if (!mainError && disconnectError) {
-      return JSON.stringify({
-        success: false,
-        error: disconnectError.message,
-      });
-    }
-
-    return JSON.stringify(result);
+    return finalizeResult(result, mainError, disconnectError);
   },
 });
 
@@ -479,20 +495,14 @@ const screenshotTool = tool({
       });
     }
 
-    if (!args.url) {
-      return JSON.stringify({
-        success: false,
-        error: 'URL is required',
-      });
-    }
-    const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+    const timeout = parseTimeout();
 
     let disconnectError: Error | null = null;
     let mainError: Error | null = null;
     let result: ScreenshotResult;
 
     try {
-      await browserManager.connect(wsUrl);
+      await browserManager.connect(buildWsUrl(wsUrl));
       const page = await browserManager.getPage();
 
       if (args.viewportWidth || args.viewportHeight) {
@@ -502,18 +512,17 @@ const screenshotTool = tool({
         });
       }
 
-      if (args.url) {
-        await page.goto(args.url, {
-          waitUntil: 'networkidle2',
-          timeout,
-        });
-      }
+      await page.goto(args.url, {
+        waitUntil: 'networkidle2',
+        timeout,
+      });
 
       const screenshotOptions = {
         type: args.format,
         fullPage: args.fullPage,
         path: args.path || undefined,
-        quality: args.format === 'jpeg' || args.format === 'webp' ? args.quality || 80 : undefined,
+        quality:
+          args.format === 'jpeg' || args.format === 'webp' ? (args.quality ?? 80) : undefined,
       } as const;
 
       const buffer = await page.screenshot(screenshotOptions);
@@ -546,7 +555,7 @@ const screenshotTool = tool({
       mainError = error as Error;
       result = {
         success: false,
-        error: mainError.message,
+        error: sanitizeErrorMessage(mainError.message),
       };
     } finally {
       try {
@@ -556,14 +565,7 @@ const screenshotTool = tool({
       }
     }
 
-    if (!mainError && disconnectError) {
-      return JSON.stringify({
-        success: false,
-        error: disconnectError.message,
-      });
-    }
-
-    return JSON.stringify(result);
+    return finalizeResult(result, mainError, disconnectError);
   },
 });
 
@@ -620,14 +622,14 @@ const pdfTool = tool({
         error: 'BROWSERLESS_URL environment variable is not set',
       });
     }
-    const timeout = parseInt(process.env.BROWSERLESS_TIMEOUT || '30000', 10);
+    const timeout = parseTimeout();
 
     let disconnectError: Error | null = null;
     let mainError: Error | null = null;
     let result: PdfResult;
 
     try {
-      await browserManager.connect(wsUrl);
+      await browserManager.connect(buildWsUrl(wsUrl));
       const page = await browserManager.getPage();
 
       if (args.url) {
@@ -688,7 +690,7 @@ const pdfTool = tool({
       mainError = error as Error;
       result = {
         success: false,
-        error: mainError.message,
+        error: sanitizeErrorMessage(mainError.message),
       };
     } finally {
       try {
@@ -698,14 +700,7 @@ const pdfTool = tool({
       }
     }
 
-    if (!mainError && disconnectError) {
-      return JSON.stringify({
-        success: false,
-        error: disconnectError.message,
-      });
-    }
-
-    return JSON.stringify(result);
+    return finalizeResult(result, mainError, disconnectError);
   },
 });
 
@@ -718,7 +713,7 @@ export const BrowserlessPlugin = async () => {
       pdf: pdfTool,
     },
     'experimental.chat.system.transform': async (
-      _input: { system: string[] },
+      _input: { sessionID?: string; model: Model },
       output: { system: string[] },
     ) => {
       output.system.push(`
@@ -753,7 +748,7 @@ All tools return JSON with the following structures:
     "subjectAlternativeNames": string[] | undefined,  // alternative domain names
     "validFrom": number,            // validity start timestamp
     "validTo": number               // validity end timestamp
-  } | null | undefined,             // null for HTTP, undefined if unavailable
+  } | null | undefined,             // null for HTTP or when unavailable
   "error": string | undefined       // error message if failed
 }
 \`\`\`
@@ -819,7 +814,7 @@ Either \`path\` or \`base64\` is returned depending on whether output file path 
 Set \`BROWSERLESS_URL\` env variable to your browserless instance:
 - Local: \`ws://localhost:3000\`
 - Remote: \`ws://your-browserless.com\`
-- Remote with API key: Set \`BROWSERLESS_API_KEY\`
+- Remote with API key: Set \`BROWSERLESS_API_KEY\` (appended as a \`token\` query param; a token already embedded in \`BROWSERLESS_URL\` takes precedence)
 
 ### SearXNG (Optional - takes priority over DuckDuckGo)
 - \`SEARXNG_URL\` - URL to your SearXNG instance (e.g., \`http://localhost:8888\`)

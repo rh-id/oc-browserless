@@ -20,9 +20,6 @@ pluginFiles.forEach(file => {
 // Create package.json for .opencode
 const deps = {
   type: 'module',
-  dependencies: {},
+  dependencies: pkg.dependencies ? { ...pkg.dependencies } : {},
 };
-['@opencode-ai/plugin', 'puppeteer-core'].forEach(d => {
-  if (pkg.dependencies[d]) deps.dependencies[d] = pkg.dependencies[d];
-});
 fs.writeFileSync('.opencode/package.json', JSON.stringify(deps, null, 2));

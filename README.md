@@ -97,6 +97,8 @@ export BROWSERLESS_URL=wss://your-browserless-instance.com
 export BROWSERLESS_API_KEY=your-api-key
 ```
 
+If `BROWSERLESS_URL` already contains a `token` query parameter, it takes precedence over `BROWSERLESS_API_KEY`.
+
 ### Environment Configuration
 
 Copy the example environment file:
@@ -110,6 +112,9 @@ Edit `.env` with your browserless configuration:
 ```bash
 BROWSERLESS_URL=ws://localhost:3000
 BROWSERLESS_API_KEY=your-api-key-if-using-remote
+
+# Optional: Operation timeout in milliseconds (default 30000)
+BROWSERLESS_TIMEOUT=30000
 
 # Optional: SearXNG instance URL (takes priority over DuckDuckGo)
 SEARXNG_URL=http://localhost:8888
@@ -194,7 +199,7 @@ The plugin is automatically loaded from `.opencode/plugin/` directory.
 ```
 oc-browserless/
 ├── .github/workflows/           # CI/CD workflows
-│   ├── build.yml               # Build and test
+│   ├── build.yml               # Build project
 │   ├── lint.yml                # Linting and formatting
 │   └── release.yml             # Automated releases
 ├── .husky/                    # Git hooks
@@ -213,7 +218,7 @@ oc-browserless/
 │   └── build-copy.js          # Build copy script
 ├── src/                        # Source code (TypeScript)
 │   └── plugin/
-│       └── browserless.ts     # Complete plugin (all code, ~613 lines)
+│       └── browserless.ts     # Complete plugin (all code)
 ├── Configuration Files
 │   ├── .gitignore
 │   ├── .gitattributes
@@ -221,7 +226,6 @@ oc-browserless/
 │   ├── .prettierrc
 │   ├── .env.example
 │   ├── .release-please-manifest.json
-│   ├── opencode.json
 │   ├── package.json
 │   └── tsconfig.json
 └── Documentation
@@ -288,6 +292,13 @@ The `bun run build` command:
 3. Copies compiled files to `.opencode/` for local OpenCode testing
 
 **Note**: Always run `bun run build` after making changes to test them locally.
+
+## Security Notes
+
+The `browse`, `search`, `screenshot`, and `pdf` tools instruct the browserless instance to fetch any http(s) URL and return its content or rendering to the agent - they act as a proxy from the browserless host.
+
+- Avoid exposing browserless to untrusted users
+- Be aware that internal/private network URLs reachable from the browserless host can be requested by name
 
 ## Usage
 
@@ -447,7 +458,7 @@ Capture page screenshots.
 
 | Argument       | Type    | Required | Default | Description                   |
 | -------------- | ------- | -------- | ------- | ----------------------------- |
-| url            | string  | No       | -       | URL to screenshot             |
+| url            | string  | Yes      | -       | URL to screenshot             |
 | path           | string  | No       | -       | Output file path              |
 | format         | enum    | No       | png     | Format: png, jpeg, webp       |
 | fullPage       | boolean | No       | false   | Full page screenshot          |
@@ -599,7 +610,7 @@ curl http://localhost:3000/health
 
 **Error**: "Operation timed out"
 
-- Increase timeout in browser options
+- Increase timeout via the `BROWSERLESS_TIMEOUT` environment variable (milliseconds, default 30000)
 - Check network connectivity
 - Verify URL is accessible
 
@@ -652,17 +663,11 @@ bun update
 
 ### Clean Scripts
 
-The project includes several clean scripts for easy cleanup:
+The project includes clean scripts for easy cleanup:
 
 ```bash
 # Clean build output only
 bun run clean
-
-# Clean build output and dependencies
-bun run clean:deps
-
-# Clean build output and all dependencies
-bun run clean:all
 
 # Full reset: clean everything, reinstall dependencies, and rebuild
 bun run reset
@@ -671,8 +676,6 @@ bun run reset
 **Use these when:**
 
 - `clean` - After making changes to TypeScript files
-- `clean:deps` - When dependencies need reinstalling
-- `clean:all` - When you want a fresh start
 - `reset` - When troubleshooting build or cache issues
 
 ### Troubleshooting Build Issues
