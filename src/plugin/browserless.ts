@@ -1,7 +1,7 @@
 import { tool } from '@opencode-ai/plugin';
 import type { Model } from '@opencode-ai/sdk';
 import type { Browser, Page, BrowserContext } from 'puppeteer-core';
-import sanitizeHtml from 'sanitize-html';
+import { NodeHtmlMarkdown } from 'node-html-markdown';
 
 function isValidUrl(url: string): boolean {
   try {
@@ -46,72 +46,101 @@ function finalizeResult(
   return JSON.stringify(result);
 }
 
-async function stripHtmlContent(page: Page): Promise<string> {
-  const html = await page.content();
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  const bodyHtml = bodyMatch ? bodyMatch[1] : html;
+// Runs inside the page via page.evaluate(): puppeteer serializes the function source
+// into the browser, so it must not close over any module state (hence the inline
+// selector list). The optional docArg parameter exists only so tests can drive the
+// same logic with a synthetic document; inside a real page it reads globalThis.document.
+export function cleanupPageAndExtract(docArg?: Document): string {
+  const doc = docArg ?? (globalThis as { document?: Document }).document;
+  if (!doc?.body) return '';
+  const selectors = [
+    // media / embedded content
+    'script',
+    'style',
+    'noscript',
+    'template',
+    'iframe',
+    'frame',
+    'frameset',
+    'object',
+    'embed',
+    'svg',
+    'canvas',
+    'video',
+    'audio',
+    'source',
+    'track',
+    'map',
+    // interactive elements
+    'form',
+    'input',
+    'select',
+    'textarea',
+    'button',
+    'label',
+    'dialog',
+    // layout boilerplate
+    'nav',
+    'header',
+    'footer',
+    'aside',
+    '[role="navigation"]',
+    '[role="banner"]',
+    '[role="contentinfo"]',
+    '[role="dialog"]',
+    '[role="search"]',
+    // invisible by attribute
+    '[hidden]',
+    '[aria-hidden="true"]',
+  ].join(',');
+  doc.body.querySelectorAll(selectors).forEach(el => el.remove());
+  const view = doc.defaultView;
+  if (view && typeof view.getComputedStyle === 'function') {
+    for (const el of Array.from(doc.body.querySelectorAll('*'))) {
+      try {
+        const style = view.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') el.remove();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  return doc.body.innerHTML;
+}
 
-  const cleanHtml = sanitizeHtml(bodyHtml, {
-    allowedTags: [
-      'h1',
-      'h2',
-      'h3',
-      'h4',
-      'h5',
-      'h6',
-      'p',
-      'span',
-      'div',
-      'ul',
-      'ol',
-      'li',
-      'article',
-      'section',
-      'main',
-      'aside',
-      'header',
-      'footer',
-      'nav',
-      'strong',
-      'b',
-      'em',
-      'i',
-      'u',
-      's',
-      'sub',
-      'sup',
-      'br',
-      'hr',
-      'blockquote',
-      'pre',
-      'code',
-      'table',
-      'thead',
-      'tbody',
-      'tfoot',
-      'tr',
-      'th',
-      'td',
-      'figure',
-      'figcaption',
-      'a',
-      'img',
-      'video',
-      'audio',
-    ],
-    allowedAttributes: {
-      a: ['href'],
-      img: ['src', 'alt'],
-      video: ['src'],
-      audio: ['src'],
-    },
-    disallowedTagsMode: 'discard',
-    allowVulnerableTags: false,
-    parseStyleAttributes: false,
-    enforceHtmlBoundary: false,
-  });
+export function collapseWhitespace(markdown: string): string {
+  return markdown
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
-  return cleanHtml.trim();
+function parseMaxContent(): number {
+  const parsed = parseInt(process.env.BROWSERLESS_MAX_CONTENT || '100000', 10);
+  return Number.isNaN(parsed) ? 100000 : parsed;
+}
+
+export function truncateContent(content: string): string {
+  const max = parseMaxContent();
+  if (max <= 0 || content.length <= max) return content;
+  return content.slice(0, max) + `\n\n[... content truncated at ${max} characters ...]`;
+}
+
+const markdownConverter = new NodeHtmlMarkdown();
+
+export async function extractPageContent(page: Page): Promise<string> {
+  let bodyHtml = '';
+  try {
+    bodyHtml = await page.evaluate(cleanupPageAndExtract);
+  } catch {
+    try {
+      bodyHtml = await page.$eval('body', el => el.innerHTML);
+    } catch {
+      bodyHtml = '';
+    }
+  }
+  if (!bodyHtml.trim()) return '';
+  return truncateContent(collapseWhitespace(markdownConverter.translate(bodyHtml)));
 }
 
 interface BrowserlessOptions {
@@ -149,7 +178,7 @@ interface SearXNGResultItem {
 interface SearchResult {
   success: boolean;
   query?: string;
-  html?: string;
+  content?: string;
   results?: SearXNGResultItem[];
   engine?: 'searxng' | 'duckduckgo';
   suggestions?: string[];
@@ -301,7 +330,7 @@ const browseTool = tool({
 
       const title = await page.title();
       const actualUrl = page.url();
-      const content = await stripHtmlContent(page);
+      const content = await extractPageContent(page);
 
       result = {
         success: true,
@@ -421,12 +450,12 @@ const searchTool = tool({
         timeout,
       });
 
-      const html = await stripHtmlContent(page);
+      const content = await extractPageContent(page);
 
       result = {
         success: true,
         query: args.query,
-        html,
+        content,
         engine: 'duckduckgo',
       };
     } catch (error) {
@@ -707,10 +736,10 @@ const pdfTool = tool({
 export const BrowserlessPlugin = async () => {
   return {
     tool: {
-      browse: browseTool,
-      search: searchTool,
-      screenshot: screenshotTool,
-      pdf: pdfTool,
+      web_browse: browseTool,
+      web_search: searchTool,
+      web_screenshot: screenshotTool,
+      web_pdf: pdfTool,
     },
     'experimental.chat.system.transform': async (
       _input: { sessionID?: string; model: Model },
@@ -726,21 +755,21 @@ export const BrowserlessPlugin = async () => {
 - Browser sessions are NOT persistent across tool calls
 
 ## Available Tools
-- \`browse\` - Navigate to and browse web pages
-- \`search\` - Search using SearXNG (if configured) or DuckDuckGo (returns JSON)
-- \`screenshot\` - Capture screenshots in PNG/JPEG/WebP formats
-- \`pdf\` - Generate PDF from HTML or URLs
+- \`web_browse\` - Navigate to and browse web pages
+- \`web_search\` - Search using SearXNG (if configured) or DuckDuckGo (returns JSON)
+- \`web_screenshot\` - Capture screenshots in PNG/JPEG/WebP formats
+- \`web_pdf\` - Generate PDF from HTML or URLs
 
 ## Return Structures
 All tools return JSON with the following structures:
 
-### browse
+### web_browse
 \`\`\`json
 {
   "success": boolean,      // true if page loaded successfully
   "url": string | undefined,        // actual URL after redirects
   "title": string | undefined,      // page title
-  "content": string | undefined,     // HTML content of the page
+  "content": string | undefined,     // Markdown content of the page (boilerplate stripped)
   "certificate": {
     "issuer": string,               // certificate issuer
     "protocol": string,             // SSL/TLS protocol (e.g., TLS 1.2)
@@ -753,7 +782,7 @@ All tools return JSON with the following structures:
 }
 \`\`\`
 
-### search
+### web_search
 When \`SEARXNG_URL\` is set, returns structured JSON results directly from SearXNG API:
 \`\`\`json
 {
@@ -775,18 +804,18 @@ When \`SEARXNG_URL\` is set, returns structured JSON results directly from SearX
   "error": string
 }
 \`\`\`
-When SearXNG is not configured, falls back to DuckDuckGo with HTML results:
+When SearXNG is not configured, falls back to DuckDuckGo and returns Markdown of the results page (boilerplate stripped):
 \`\`\`json
 {
   "success": true,
   "query": string,
-  "html": string,
+  "content": string,
   "engine": "duckduckgo",
   "error": string
 }
 \`\`\`
 
-### screenshot
+### web_screenshot
 \`\`\`json
 {
   "success": boolean,      // true if screenshot captured
@@ -798,7 +827,7 @@ When SearXNG is not configured, falls back to DuckDuckGo with HTML results:
 \`\`\`
 Either \`path\` or \`base64\` is returned depending on whether output file path is provided.
 
-### pdf
+### web_pdf
 \`\`\`json
 {
   "success": boolean,      // true if PDF generated
@@ -820,7 +849,7 @@ Set \`BROWSERLESS_URL\` env variable to your browserless instance:
 - \`SEARXNG_URL\` - URL to your SearXNG instance (e.g., \`http://localhost:8888\`)
 - \`SEARXNG_BASIC_USER\` - Basic auth username (leave empty if no auth)
 - \`SEARXNG_BASIC_PASSWORD\` - Basic auth password
-- When configured, search uses SearXNG JSON API directly (no browser needed)
+- When configured, \`web_search\` uses SearXNG JSON API directly (no browser needed)
 
 ## Important Notes
 - Browserless supports multiple concurrent connections automatically

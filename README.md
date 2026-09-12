@@ -7,10 +7,10 @@ Browserless plugin for OpenCode using puppeteer-core.
 
 ## Features
 
-- **Web Browsing**: Navigate and browse web pages with content extraction and security certificate information
-- **Web Search**: Search the web using SearXNG (if configured) or DuckDuckGo fallback
-- **Screenshots**: Capture screenshots in PNG, JPEG, and WebP formats
-- **PDF Generation**: Convert HTML or URLs to PDF documents
+- **Web Browsing** (`web_browse`): Navigate and browse web pages, returning clean Markdown with boilerplate (nav, footer, scripts, hidden elements) stripped, plus security certificate information
+- **Web Search** (`web_search`): Search the web using SearXNG (if configured) or DuckDuckGo fallback (results page returned as Markdown)
+- **Screenshots** (`web_screenshot`): Capture screenshots in PNG, JPEG, and WebP formats
+- **PDF Generation** (`web_pdf`): Convert HTML or URLs to PDF documents
 - **Browser Lifecycle Management**: Automatic browser connection management
 
 ## Installation
@@ -116,6 +116,9 @@ BROWSERLESS_API_KEY=your-api-key-if-using-remote
 # Optional: Operation timeout in milliseconds (default 30000)
 BROWSERLESS_TIMEOUT=30000
 
+# Optional: Max characters of Markdown content returned by browse/search (default 100000, 0 = unlimited)
+BROWSERLESS_MAX_CONTENT=100000
+
 # Optional: SearXNG instance URL (takes priority over DuckDuckGo)
 SEARXNG_URL=http://localhost:8888
 
@@ -148,7 +151,7 @@ export SEARXNG_BASIC_USER=myuser
 export SEARXNG_BASIC_PASSWORD=mypassword
 ```
 
-When `SEARXNG_URL` is set, the search tool uses SearXNG's JSON API directly without needing a browserless instance. When not set, it falls back to DuckDuckGo via browserless.
+When `SEARXNG_URL` is set, the `web_search` tool uses SearXNG's JSON API directly without needing a browserless instance. When not set, it falls back to DuckDuckGo via browserless.
 
 ## Development Setup
 
@@ -295,7 +298,7 @@ The `bun run build` command:
 
 ## Security Notes
 
-The `browse`, `search`, `screenshot`, and `pdf` tools instruct the browserless instance to fetch any http(s) URL and return its content or rendering to the agent - they act as a proxy from the browserless host.
+The `web_browse`, `web_search`, `web_screenshot`, and `web_pdf` tools instruct the browserless instance to fetch any http(s) URL and return its content or rendering to the agent - they act as a proxy from the browserless host.
 
 - Avoid exposing browserless to untrusted users
 - Be aware that internal/private network URLs reachable from the browserless host can be requested by name
@@ -309,7 +312,7 @@ The plugin provides the following tools for OpenCode:
 ```typescript
 // Navigate to a URL and get content
 {
-  "tool": "browse",
+  "tool": "web_browse",
   "args": {
     "url": "https://example.com"
   }
@@ -321,7 +324,7 @@ The plugin provides the following tools for OpenCode:
 ```typescript
 // Search the web
 {
-  "tool": "search",
+  "tool": "web_search",
   "args": {
     "query": "TypeScript best practices"
   }
@@ -356,7 +359,7 @@ The plugin provides the following tools for OpenCode:
 {
   "success": true,
   "query": "TypeScript best practices",
-  "html": "<html>...</html>",
+  "content": "# TypeScript Best Practices\n\n...",
   "engine": "duckduckgo"
 }
 ```
@@ -366,7 +369,7 @@ The plugin provides the following tools for OpenCode:
 ```typescript
 // Capture screenshot
 {
-  "tool": "screenshot",
+  "tool": "web_screenshot",
   "args": {
     "url": "https://example.com",
     "path": "./screenshot.png",
@@ -381,7 +384,7 @@ The plugin provides the following tools for OpenCode:
 ```typescript
 // Generate PDF from URL
 {
-  "tool": "pdf",
+  "tool": "web_pdf",
   "args": {
     "url": "https://example.com",
     "path": "./output.pdf",
@@ -392,7 +395,7 @@ The plugin provides the following tools for OpenCode:
 
 // Generate PDF from HTML
 {
-  "tool": "pdf",
+  "tool": "web_pdf",
   "args": {
     "html": "<html><body><h1>Hello World</h1></body></html>",
     "path": "./output.pdf"
@@ -413,7 +416,7 @@ All browser operations automatically manage their own connections:
 
 ## API Reference
 
-### browse
+### web_browse
 
 Navigate to and browse web pages.
 
@@ -428,7 +431,7 @@ Navigate to and browse web pages.
   "success": true,
   "url": "https://example.com",
   "title": "Example Domain",
-  "content": "<html>...</html>",
+  "content": "# Example Domain\n\n...",
   "certificate": {
     "issuer": "CN=DigiCert Inc",
     "protocol": "TLS 1.3",
@@ -440,9 +443,9 @@ Navigate to and browse web pages.
 }
 ```
 
-The `certificate` field is `null` for HTTP connections or when security details are unavailable.
+The `certificate` field is `null` for HTTP connections or when security details are unavailable. The `content` field contains Markdown of the page with boilerplate (nav, header, footer, scripts, hidden elements) stripped.
 
-### search
+### web_search
 
 Search the web using SearXNG (if configured) or DuckDuckGo (fallback).
 
@@ -452,7 +455,7 @@ When `SEARXNG_URL` is set, uses the SearXNG JSON API directly (no browserless in
 | -------- | ------ | -------- | ------- | ------------ |
 | query    | string | Yes      | -       | Search query |
 
-### screenshot
+### web_screenshot
 
 Capture page screenshots.
 
@@ -466,7 +469,7 @@ Capture page screenshots.
 | viewportWidth  | number  | No       | -       | Viewport width                |
 | viewportHeight | number  | No       | -       | Viewport height               |
 
-### pdf
+### web_pdf
 
 Generate PDF from HTML or URL.
 
