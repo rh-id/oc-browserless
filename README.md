@@ -58,12 +58,27 @@ npm install oc-browserless
 
 Add to your `opencode.json`:
 
+**OpenCode V1 (requires >= 1.18.29):**
+
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": ["oc-browserless"]
 }
 ```
+
+**OpenCode V2:**
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["oc-browserless"]
+}
+```
+
+One package serves both versions: the package declares `engines.opencode >= 1.18.29` (enforced by V1's plugin loader and checked by V2), so V1 users must be on at least 1.18.29.
+
+> **Behavioral note (V2 only):** under V1, an invalid `url` argument (e.g. not http/https) is rejected at the schema level; under V2 the same argument surfaces at runtime as the tool's standard JSON failure result (`{"success": false, "error": "Invalid URL format"}`).
 
 ## Browserless Setup
 
@@ -170,7 +185,7 @@ bun install
 
 This will install:
 
-- Runtime dependencies (`puppeteer-core`, `@opencode-ai/plugin`)
+- Runtime dependencies (`puppeteer-core`, `@opencode-ai/plugin`, `@opencode/plugin`, `node-html-markdown`)
 - Development dependencies (ESLint, Prettier, TypeScript)
 
 ### 3. Build Project
@@ -195,7 +210,7 @@ Run opencode in the project directory:
 opencode
 ```
 
-The plugin is automatically loaded from `.opencode/plugin/` directory.
+The plugin is automatically loaded from `.opencode/plugin/` — this single directory is discovered by both OpenCode V1 and V2. Do **not** also place plugin files in `.opencode/plugins/` (plural): V1 would register the plugin twice.
 
 ## Project Structure
 
@@ -208,20 +223,27 @@ oc-browserless/
 ├── .husky/                    # Git hooks
 │   └── pre-commit              # Pre-commit lint-staged
 ├── .opencode/                  # OpenCode plugin files (compiled for local dev)
-│   ├── plugin/                 # Compiled plugin
-│   │   └── browserless.js     # Plugin entry point (all code)
+│   ├── plugin/                 # Compiled plugin (discovered by BOTH V1 and V2)
+│   │   ├── browserless.js     # Plugin entry point (dual V1/V2 export)
+│   │   ├── guidelines.js      # System prompt guidelines module
+│   │   └── schemas.js         # Tool JSON Schemas + arg normalizers
 │   └── package.json           # Dependencies for local dev
 ├── dist/                       # Compiled output (published to npm)
 │   └── plugin/
 │       ├── browserless.js      # Compiled plugin
+│       ├── guidelines.js       # Compiled guidelines module
+│       ├── schemas.js          # Compiled schemas module
 │       ├── browserless.d.ts    # Type declarations
 │       ├── browserless.js.map  # Source map
 │       └── browserless.d.ts.map # Type source map
 ├── scripts/                    # Build scripts
-│   └── build-copy.js          # Build copy script
+│   ├── build-copy.js          # Build copy script
+│   └── smoke.ts               # Post-build smoke test (bun scripts/smoke.ts)
 ├── src/                        # Source code (TypeScript)
 │   └── plugin/
-│       └── browserless.ts     # Complete plugin (all code)
+│       ├── browserless.ts     # Plugin entry (V1 tools + V2 setup, shared logic)
+│       ├── guidelines.ts      # System prompt text
+│       └── schemas.ts         # V2 JSON Schemas, descriptions, arg normalizers
 ├── Configuration Files
 │   ├── .gitignore
 │   ├── .gitattributes
@@ -243,7 +265,7 @@ For contributors working on the plugin locally:
 
 ### Local Testing Workflow
 
-1. Make your changes to `src/plugin/browserless.ts`
+1. Make your changes under `src/plugin/` (`browserless.ts`, `guidelines.ts`, `schemas.ts`)
 
 2. Build the project:
 
@@ -255,6 +277,8 @@ For contributors working on the plugin locally:
 
 3. The `.opencode/` directory is used for local development with OpenCode:
    - It contains the compiled plugin code
+   - `.opencode/plugin/` is the only plugin directory: it is discovered by BOTH OpenCode V1 and V2 from this single location
+   - Do **not** also copy plugin files to `.opencode/plugins/` (plural) — V1 would register the plugin twice (the build script deletes any stale `.opencode/plugins/` directory automatically)
    - When the package is published to npm, only the `dist/` directory is included
    - Running `opencode` in the project root automatically loads the plugin from `.opencode/plugin/`
 
@@ -267,7 +291,7 @@ For contributors working on the plugin locally:
    The plugin is automatically loaded from `.opencode/plugin/` directory
 
 5. Iterate:
-   - Make changes to `src/plugin/browserless.ts`
+   - Make changes to `src/plugin/`
    - Run `bun run build` to update `.opencode/plugin/`
    - Test with `opencode`
 
@@ -275,15 +299,21 @@ For contributors working on the plugin locally:
 
 ```
 src/plugin/
-  └── browserless.ts     # Source code (edit this)
+  ├── browserless.ts     # Plugin entry point (edit this)
+  ├── guidelines.ts      # System prompt guidelines text
+  └── schemas.ts         # V2 JSON Schemas + shared arg normalizers
 
 dist/plugin/              # Compiled output (published to npm)
   ├── browserless.js
+  ├── guidelines.js
+  ├── schemas.js
   ├── browserless.d.ts
   └── browserless.js.map
 
 .opencode/plugin/         # Local dev copy (for testing with opencode)
-  └── browserless.js      # Same compiled code as dist/plugin/browserless.js
+  ├── browserless.js      # Same compiled code as dist/plugin/ (V1 AND V2 load from here)
+  ├── guidelines.js
+  └── schemas.js
 ```
 
 ### Build Process

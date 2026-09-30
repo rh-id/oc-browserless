@@ -19,6 +19,7 @@
     "build:copy": "node scripts/build-copy.js",
     "clean": "rm -rf dist .opencode",
     "reset": "bun run clean && bun install && bun run build",
+    "smoke": "bun scripts/smoke.ts",
     "test": "bun test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -38,6 +39,9 @@
   ],
   "author": "Ruby Hartono",
   "license": "MIT",
+  "engines": {
+    "opencode": ">=1.18.29"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/rh-id/oc-browserless"
@@ -48,6 +52,7 @@
   "homepage": "https://github.com/rh-id/oc-browserless#readme",
   "dependencies": {
     "@opencode-ai/plugin": "1.15.10",
+    "@opencode/plugin": "2.0.20",
     "node-html-markdown": "2.0.0",
     "puppeteer-core": "23.11.1"
   },

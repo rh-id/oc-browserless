@@ -43,3 +43,7 @@ coverage/
 temp/
 tmp/
 *.tmp
+
+# AI tooling
+.serena/
+.zcode/

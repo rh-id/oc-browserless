@@ -15,6 +15,10 @@ pluginFiles.forEach(file => {
   copyFile(path.join(pluginDir, file), `.opencode/plugin/${file}`);
 });
 
+// .opencode/plugin/ is discovered by both OpenCode V1 and V2; a stale plural
+// plugins/ directory would cause double registration under V1.
+fs.rmSync('.opencode/plugins', { recursive: true, force: true });
+
 // No separate browser or utils files to copy - all in browserless.ts
 
 // Create package.json for .opencode
