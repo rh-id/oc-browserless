@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v1.0.0...oc-browserless-v2.0.0) (2026-09-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* requires OpenCode >= 1.18.29
+
+### Features
+
+* support OpenCode V2 while keeping V1 compatibility ([c25c49b](https://github.com/rh-id/oc-browserless/commit/c25c49b593cbb0732794a56ed5f9a4282543a50e))
+
 ## [1.0.0](https://github.com/rh-id/oc-browserless/compare/oc-browserless-v0.4.0...oc-browserless-v1.0.0) (2026-09-12)
 
 
